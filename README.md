@@ -7,7 +7,7 @@
 ![Python](https://img.shields.io/badge/python-3.10%2B-3776AB?logo=python&logoColor=white)
 ![Flask](https://img.shields.io/badge/flask-3.x-000000?logo=flask&logoColor=white)
 ![Deployed on Vercel](https://img.shields.io/badge/deployed%20on-vercel-000000?logo=vercel&logoColor=white)
-![Tests](https://img.shields.io/badge/tests-23%20passing-3fb950)
+![Tests](https://img.shields.io/badge/tests-27%20passing-3fb950)
 
 ### [**>> Open the live demo <<**](https://schema-drift-nine.vercel.app/)
 
@@ -76,6 +76,18 @@ changes = diff_schemas(load_schema(old_sql), load_schema(new_sql))
 print(summarize(changes)["verdict"])   # BREAKING / REVIEW / SAFE / NO CHANGES
 ```
 
+### JSON API (for CI)
+
+`POST /api/diff` takes `{"old": ..., "new": ...}` (SQL text, or a JSON schema object) and returns the summary and every change. It answers 422 for a schema it cannot read and 413 above 512 KB.
+
+```bash
+curl -s -X POST https://schema-drift-nine.vercel.app/api/diff \
+  -H 'Content-Type: application/json' \
+  -d '{"old": "CREATE TABLE t (id INT PRIMARY KEY, n INT);", "new": "CREATE TABLE t (id INT PRIMARY KEY);"}'
+```
+
+In CI, fail the job when `summary.verdict` is `BREAKING`.
+
 ## Example result
 
 For the built-in example (a proposed `v2` of a users and orders schema) SchemaDrift reports **6 breaking, 2 review, 7 safe**, including:
@@ -110,13 +122,13 @@ python -m pytest -q
 ## Project layout
 
 ```
-app.py                 Flask app (/ and /healthz)
+app.py                 Flask app (/, /api/diff, /healthz)
 schemadrift/parser.py  SQL DDL and JSON to a common schema model
 schemadrift/diff.py    diff engine and breaking / review / safe rules
 schemadrift/examples.py  built-in demo schemas
 templates/index.html   report UI
 docs/demo.svg          demo screenshot used in this README
-tests/                 parser and diff tests
+tests/                 parser, diff and API tests
 render.yaml            optional Render blueprint
 ```
 
