@@ -1,8 +1,21 @@
+<div align="center">
+
 # SchemaDrift
 
-SchemaDrift compares two versions of a database schema and tells you what changed and which changes will break running code. Paste the old and new schema, get a colour-coded report: **BREAKING**, **REVIEW** or **SAFE**.
+**Catch breaking database changes before they ship.**
 
-**Live demo:** https://schema-drift-nine.vercel.app/ (an example pair is preloaded, just press *Compare schemas*)
+![Python](https://img.shields.io/badge/python-3.10%2B-3776AB?logo=python&logoColor=white)
+![Flask](https://img.shields.io/badge/flask-3.x-000000?logo=flask&logoColor=white)
+![Deployed on Vercel](https://img.shields.io/badge/deployed%20on-vercel-000000?logo=vercel&logoColor=white)
+![Tests](https://img.shields.io/badge/tests-23%20passing-3fb950)
+
+### [**>> Open the live demo <<**](https://schema-drift-nine.vercel.app/)
+
+</div>
+
+SchemaDrift compares two versions of a database schema and tells you what changed and which changes will break running code. Paste the old and new schema, get a colour-coded report: **BREAKING**, **REVIEW** or **SAFE**. An example pair is preloaded, so the demo works the moment it opens.
+
+![SchemaDrift diff report](docs/demo.svg)
 
 ## Why it matters
 
@@ -12,7 +25,15 @@ Most outages from database migrations are avoidable. A dropped column, a new `NO
 - Run it as a check in CI to stop a breaking schema change from merging unnoticed.
 - Explain to teammates exactly why a change is risky.
 
-## What it detects
+## Features
+
+- Reads **SQL DDL** (`CREATE TABLE`, `CREATE INDEX`, `ALTER TABLE ... ADD`) or **JSON**, auto-detected.
+- Classifies every change as breaking, review or safe, with a plain-English reason.
+- Flags a possible rename when a column is dropped and another of the same type is added.
+- Works as a web UI and as a Python library.
+- No database connection, no secrets, no setup.
+
+### Classification rules
 
 | Level | Examples |
 |---|---|
@@ -94,6 +115,7 @@ schemadrift/parser.py  SQL DDL and JSON to a common schema model
 schemadrift/diff.py    diff engine and breaking / review / safe rules
 schemadrift/examples.py  built-in demo schemas
 templates/index.html   report UI
+docs/demo.svg          demo screenshot used in this README
 tests/                 parser and diff tests
 render.yaml            optional Render blueprint
 ```
