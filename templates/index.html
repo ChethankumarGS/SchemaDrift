@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SchemaDrift - catch breaking database changes</title>
+<style>
+  :root { --bg:#0f1419; --card:#171d25; --line:#2a3340; --text:#e6edf3; --mute:#8b98a5;
+          --red:#f85149; --amber:#d29922; --green:#3fb950; }
+  * { box-sizing: border-box; }
+  body { margin:0; font:15px/1.5 system-ui,-apple-system,Segoe UI,sans-serif; background:var(--bg); color:var(--text); }
+  main { max-width:1100px; margin:0 auto; padding:28px 18px 60px; }
+  h1 { margin:0 0 4px; font-size:28px; } h1 span { color:var(--amber); }
+  .sub { color:var(--mute); margin:0 0 22px; }
+  .grid { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+  @media (max-width:760px){ .grid{grid-template-columns:1fr;} }
+  label { display:block; font-weight:600; margin-bottom:6px; }
+  textarea { width:100%; height:300px; background:var(--card); color:var(--text); border:1px solid var(--line);
+             border-radius:8px; padding:10px; font:13px/1.45 ui-monospace,Menlo,Consolas,monospace; resize:vertical; }
+  button { margin-top:14px; background:#238636; color:#fff; border:0; border-radius:8px; padding:10px 20px; font-size:15px; cursor:pointer; }
+  button:hover { background:#2ea043; }
+  .hint { color:var(--mute); font-size:13px; margin-top:6px; }
+  .summary { display:flex; gap:12px; flex-wrap:wrap; margin:30px 0 14px; align-items:center; }
+  .pill { padding:6px 14px; border-radius:999px; font-weight:600; border:1px solid var(--line); background:var(--card); }
+  .pill.breaking { color:var(--red); border-color:var(--red); } .pill.warning { color:var(--amber); border-color:var(--amber); }
+  .pill.safe { color:var(--green); border-color:var(--green); }
+  .verdict { font-size:20px; font-weight:700; margin-right:8px; }
+  .verdict.BREAKING { color:var(--red); } .verdict.REVIEW { color:var(--amber); } .verdict.SAFE,.verdict.NOCHANGES { color:var(--green); }
+  .change { display:flex; gap:12px; padding:10px 14px; margin-bottom:8px; background:var(--card);
+            border:1px solid var(--line); border-left-width:4px; border-radius:6px; }
+  .change.breaking { border-left-color:var(--red); } .change.warning { border-left-color:var(--amber); } .change.safe { border-left-color:var(--green); }
+  .tag { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.04em; min-width:72px; padding-top:3px; }
+  .breaking .tag { color:var(--red); } .warning .tag { color:var(--amber); } .safe .tag { color:var(--green); }
+  .kind { color:var(--mute); font-size:12px; font-family:ui-monospace,monospace; }
+  .error { background:#3d1418; border:1px solid var(--red); padding:12px 14px; border-radius:8px; margin-top:20px; }
+  footer { margin-top:40px; color:var(--mute); font-size:13px; }
+  a { color:#58a6ff; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Schema<span>Drift</span></h1>
+  <p class="sub">Paste two versions of a database schema. See what changed and which changes will break running code.</p>
+
+  <form method="post" action="/">
+    <div class="grid">
+      <div><label for="old_schema">Old schema (current)</label>
+        <textarea id="old_schema" name="old_schema" spellcheck="false">{{ old_text }}</textarea></div>
+      <div><label for="new_schema">New schema (proposed)</label>
+        <textarea id="new_schema" name="new_schema" spellcheck="false">{{ new_text }}</textarea></div>
+    </div>
+    <p class="hint">SQL DDL (CREATE TABLE, CREATE INDEX, ALTER TABLE ... ADD) or JSON. The example above is loaded so you can just press the button.</p>
+    <button type="submit">Compare schemas</button>
+  </form>
+
+  {% if error %}<div class="error"><strong>Could not read a schema:</strong> {{ error }}</div>{% endif %}
+
+  {% if summary %}
+  <div class="summary">
+    <span class="verdict {{ summary.verdict.replace(' ','') }}">{{ summary.verdict }}</span>
+    <span class="pill breaking">{{ summary.breaking }} breaking</span>
+    <span class="pill warning">{{ summary.warning }} review</span>
+    <span class="pill safe">{{ summary.safe }} safe</span>
+  </div>
+  {% for c in changes %}
+  <div class="change {{ c.severity }}">
+    <div class="tag">{{ c.severity }}</div>
+    <div>{{ c.message }}<br><span class="kind">{{ c.kind }}{% if c.old or c.new %} &middot; {{ c.old or '-' }} &rarr; {{ c.new or '-' }}{% endif %}</span></div>
+  </div>
+  {% endfor %}
+  {% if not changes %}<p>The two schemas are identical.</p>{% endif %}
+  {% endif %}
+
+  <footer>Breaking = will fail old code or existing data. Review = may fail depending on data. Safe = additive. Built by <a href="https://github.com/ChethankumarGS">ChethankumarGS</a>.</footer>
+</main>
+</body>
+</html>
