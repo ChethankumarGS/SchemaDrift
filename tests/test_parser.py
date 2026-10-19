@@ -51,3 +51,20 @@ def test_malformed_json_shapes_raise_parse_error(definition):
     import json
     with pytest.raises(ParseError):
         load_schema(json.dumps({"tables": {"t": definition}}))
+
+
+@pytest.mark.parametrize("sql", [
+    "CREATE TABLE t (id INT PRIMARY KEY, n INT);",
+    "CREATE TABLE t (id INT, n INT, PRIMARY KEY (id, n));",
+    "CREATE TABLE t (id INT, n INT); ALTER TABLE t ADD PRIMARY KEY (id);",
+])
+def test_primary_key_columns_are_not_nullable(sql):
+    table = load_schema(sql).tables["t"]
+    assert all(not table.columns[c].nullable for c in table.primary_key)
+
+
+def test_json_primary_key_implies_not_null():
+    schema = load_schema('{"tables":{"t":{"columns":{"id":"int"},"primary_key":["id"]}}}')
+    assert schema.tables["t"].columns["id"].nullable is False
+    with pytest.raises(ParseError, match="unknown column"):
+        load_schema('{"tables":{"t":{"columns":{},"primary_key":["missing"]}}}')

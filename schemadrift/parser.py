@@ -175,6 +175,10 @@ def parse_sql(sql: str) -> Schema:
             t = schema.tables[_clean_ident(m.group(1))]
             if not _parse_table_constraint(m.group(2), t):
                 _parse_column(m.group(2), t)
+    for table in schema.tables.values():
+        for column in table.primary_key:
+            if column in table.columns:
+                table.columns[column].nullable = False
     if not schema.tables:
         raise ParseError("No CREATE TABLE statements found.")
     return schema
@@ -226,6 +230,10 @@ def parse_json(text: str) -> Schema:
             if not isinstance(fk, dict) or not all(isinstance(fk.get(k), str) for k in ("column", "references_table", "references_column")):
                 raise ParseError(f"Foreign key for {tname!r} needs column, references_table and references_column strings.")
             t.foreign_keys.add((fk["column"].lower(), fk["references_table"].lower(), fk["references_column"].lower()))
+        for column in t.primary_key:
+            if column not in t.columns:
+                raise ParseError(f"Primary key refers to unknown column {tname}.{column}.")
+            t.columns[column].nullable = False
         schema.tables[t.name] = t
     return schema
 
