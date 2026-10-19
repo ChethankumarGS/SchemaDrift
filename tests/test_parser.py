@@ -68,3 +68,8 @@ def test_json_primary_key_implies_not_null():
     assert schema.tables["t"].columns["id"].nullable is False
     with pytest.raises(ParseError, match="unknown column"):
         load_schema('{"tables":{"t":{"columns":{},"primary_key":["missing"]}}}')
+
+
+def test_numbered_postgres_integer_aliases_are_normalized():
+    cols = load_schema("CREATE TABLE t (a INT2, b INT4, c INT8);").tables["t"].columns
+    assert [cols[c].type for c in ("a", "b", "c")] == ["smallint", "int", "bigint"]

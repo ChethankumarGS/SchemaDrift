@@ -52,8 +52,9 @@ def _norm_type(t: str) -> str:
     t = re.sub(r"\s*,\s*", ",", t)
     t = re.sub(r"\s*\)", ")", t)
     aliases = {"integer": "int", "int4": "int", "int8": "bigint", "int2": "smallint",
-               "bool": "boolean", "character varying": "varchar", "float8": "double"}
-    base = re.match(r"[a-z ]+?(?=\(|$)", t)
+               "bool": "boolean", "character varying": "varchar", "float8": "double",
+               "double precision": "double", "float4": "real"}
+    base = re.match(r"[a-z0-9 ]+?(?=\(|$)", t)
     if base and base.group(0).strip() in aliases:
         t = aliases[base.group(0).strip()] + t[len(base.group(0)):]
     return t

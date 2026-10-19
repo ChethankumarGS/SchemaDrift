@@ -117,3 +117,12 @@ def test_default_changes_remain_visible_when_type_changes():
     changed = "CREATE TABLE t (n BIGINT DEFAULT 2);"
     assert kinds(run(old, removed)) == {("type_changed", "n"), ("default_removed", "n")}
     assert kinds(run(old, changed)) == {("type_changed", "n"), ("default_changed", "n")}
+
+
+def test_postgres_float_aliases_do_not_create_false_changes():
+    assert run("CREATE TABLE t (n FLOAT8, x FLOAT4);",
+               "CREATE TABLE t (n DOUBLE PRECISION, x REAL);") == []
+    assert ("type_changed", "n") in kinds(run(
+        "CREATE TABLE t (n REAL);", "CREATE TABLE t (n DOUBLE PRECISION);"), "safe")
+    assert ("type_changed", "n") in kinds(run(
+        "CREATE TABLE t (n DOUBLE PRECISION);", "CREATE TABLE t (n REAL);"), "breaking")
