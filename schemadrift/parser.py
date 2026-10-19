@@ -190,18 +190,41 @@ def parse_json(text: str) -> Schema:
         raise ParseError('JSON must look like {"tables": {"users": {"columns": {...}}}}')
     schema = Schema()
     for tname, tdef in tables.items():
+        if not isinstance(tdef, dict):
+            raise ParseError(f"Table {tname!r} must be an object.")
         t = Table(tname.lower())
         cols = tdef.get("columns", {})
+        if not isinstance(cols, dict):
+            raise ParseError(f"Columns for {tname!r} must be an object.")
         for cname, cdef in cols.items():
             if isinstance(cdef, str):
                 cdef = {"type": cdef}
+            if not isinstance(cdef, dict):
+                raise ParseError(f"Column {tname}.{cname} must be a type string or object.")
+            if "nullable" in cdef and not isinstance(cdef["nullable"], bool):
+                raise ParseError(f"Nullable for {tname}.{cname} must be a boolean.")
+            if "type" in cdef and (not isinstance(cdef["type"], str) or not cdef["type"].strip()):
+                raise ParseError(f"Type for {tname}.{cname} must be a non-empty string.")
             t.columns[cname.lower()] = Column(
                 cname.lower(), _norm_type(str(cdef.get("type", "text"))),
                 bool(cdef.get("nullable", True)), None if cdef.get("default") is None else str(cdef["default"]))
-        t.primary_key = tuple(c.lower() for c in tdef.get("primary_key", []))
+        pk = tdef.get("primary_key", [])
+        if not isinstance(pk, list) or not all(isinstance(c, str) for c in pk):
+            raise ParseError(f"Primary key for {tname!r} must be a list of column names.")
+        t.primary_key = tuple(c.lower() for c in pk)
+        if not isinstance(tdef.get("indexes", {}), dict):
+            raise ParseError(f"Indexes for {tname!r} must be an object.")
         for iname, idef in tdef.get("indexes", {}).items():
+            if not isinstance(idef, dict) or not isinstance(idef.get("columns", []), list) or not all(isinstance(c, str) for c in idef.get("columns", [])):
+                raise ParseError(f"Index {iname!r} must contain a list of column names.")
+            if "unique" in idef and not isinstance(idef["unique"], bool):
+                raise ParseError(f"Unique for index {iname!r} must be a boolean.")
             t.indexes[iname.lower()] = Index(iname.lower(), tuple(c.lower() for c in idef.get("columns", [])), bool(idef.get("unique", False)))
+        if not isinstance(tdef.get("foreign_keys", []), list):
+            raise ParseError(f"Foreign keys for {tname!r} must be a list.")
         for fk in tdef.get("foreign_keys", []):
+            if not isinstance(fk, dict) or not all(isinstance(fk.get(k), str) for k in ("column", "references_table", "references_column")):
+                raise ParseError(f"Foreign key for {tname!r} needs column, references_table and references_column strings.")
             t.foreign_keys.add((fk["column"].lower(), fk["references_table"].lower(), fk["references_column"].lower()))
         schema.tables[t.name] = t
     return schema

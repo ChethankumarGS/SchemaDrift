@@ -36,3 +36,18 @@ def test_type_aliases_normalised():
 def test_bad_input_raises(bad):
     with pytest.raises(ParseError):
         load_schema(bad)
+
+
+@pytest.mark.parametrize("definition", [
+    None, [], {"columns": []}, {"columns": {"id": None}},
+    {"columns": {"id": {"nullable": "false"}}},
+    {"columns": {"id": {"type": []}}}, {"primary_key": "id"},
+    {"indexes": []}, {"indexes": {"ix": None}},
+    {"indexes": {"ix": {"columns": "id"}}},
+    {"indexes": {"ix": {"unique": "false"}}},
+    {"foreign_keys": {}}, {"foreign_keys": [{}]},
+])
+def test_malformed_json_shapes_raise_parse_error(definition):
+    import json
+    with pytest.raises(ParseError):
+        load_schema(json.dumps({"tables": {"t": definition}}))

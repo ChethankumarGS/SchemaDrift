@@ -34,3 +34,10 @@ def test_api_rejects_bad_requests():
 def test_oversized_request_is_rejected():
     r = client().post("/api/diff", json={"old": "x" * (600 * 1024), "new": NEW})
     assert r.status_code == 413
+
+
+def test_malformed_json_schema_returns_validation_error_not_500():
+    for definition in (None, {"columns": []}, {"foreign_keys": [{}]}):
+        r = client().post("/api/diff", json={"old": {"tables": {"t": definition}}, "new": NEW})
+        assert r.status_code == 422
+        assert "error" in r.get_json()
