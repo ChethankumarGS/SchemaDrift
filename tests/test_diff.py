@@ -109,3 +109,11 @@ def test_same_name_index_changes_are_not_silently_ignored():
     assert ("index_changed", None) in kinds(run(old, unique), "breaking")
     assert ("index_changed", None) in kinds(run(unique, old), "breaking")
     assert run(old, old) == []
+
+
+def test_default_changes_remain_visible_when_type_changes():
+    old = "CREATE TABLE t (n INT DEFAULT 1);"
+    removed = "CREATE TABLE t (n BIGINT);"
+    changed = "CREATE TABLE t (n BIGINT DEFAULT 2);"
+    assert kinds(run(old, removed)) == {("type_changed", "n"), ("default_removed", "n")}
+    assert kinds(run(old, changed)) == {("type_changed", "n"), ("default_changed", "n")}

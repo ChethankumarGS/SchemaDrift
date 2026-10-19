@@ -90,7 +90,7 @@ def diff_schemas(old: Schema, new: Schema) -> list:
                                       c, "NULL", "NOT NULL"))
             elif not oc.nullable and nc.nullable:
                 changes.append(Change(tname, "nullability_relaxed", SAFE, f"{tname}.{c} now allows NULL. Readers that assume non-null may break.", c, "NOT NULL", "NULL"))
-            if oc.default != nc.default and oc.type == nc.type:
+            if oc.default != nc.default:
                 if nc.default is None:
                     changes.append(Change(tname, "default_removed", WARNING, f"{tname}.{c} lost its default ({oc.default}). Inserts that omit it may fail.", c, oc.default, None))
                 else:
