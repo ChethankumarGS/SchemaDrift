@@ -111,6 +111,13 @@ def diff_schemas(old: Schema, new: Schema) -> list:
                 changes.append(Change(tname, "unique_added", BREAKING, f"Unique constraint {i} on {tname}({', '.join(ix.columns)}) added. Existing duplicate rows will block the migration."))
             else:
                 changes.append(Change(tname, "index_added", SAFE, f"Index {i} on {tname}({', '.join(ix.columns)}) added."))
+        for i in sorted(set(o.indexes) & set(n.indexes)):
+            old_index, new_index = o.indexes[i], n.indexes[i]
+            if (old_index.columns, old_index.unique) != (new_index.columns, new_index.unique):
+                severity = BREAKING if old_index.unique or new_index.unique else WARNING
+                changes.append(Change(tname, "index_changed", severity,
+                                      f"Index {i} on {tname} changed columns or uniqueness. "
+                                      + ("Review duplicate data and dependent constraints." if severity == BREAKING else "Query performance may change.")))
         for fk in sorted(o.foreign_keys - n.foreign_keys):
             changes.append(Change(tname, "fk_removed", WARNING, f"Foreign key {tname}.{fk[0]} -> {fk[1]}.{fk[2]} removed. Integrity is no longer enforced."))
         for fk in sorted(n.foreign_keys - o.foreign_keys):

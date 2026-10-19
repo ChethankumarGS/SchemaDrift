@@ -99,3 +99,13 @@ def test_builtin_example_has_all_three_levels():
     s = summarize(run(OLD_SQL, NEW_SQL))
     assert s["breaking"] >= 5 and s["warning"] >= 1 and s["safe"] >= 3
     assert s["verdict"] == "BREAKING"
+
+
+def test_same_name_index_changes_are_not_silently_ignored():
+    old = BASE + " CREATE INDEX lookup ON t (name);"
+    moved = BASE + " CREATE INDEX lookup ON t (n);"
+    unique = BASE + " CREATE UNIQUE INDEX lookup ON t (name);"
+    assert ("index_changed", None) in kinds(run(old, moved), "warning")
+    assert ("index_changed", None) in kinds(run(old, unique), "breaking")
+    assert ("index_changed", None) in kinds(run(unique, old), "breaking")
+    assert run(old, old) == []
