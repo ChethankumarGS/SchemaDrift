@@ -228,8 +228,12 @@ def parse_sql(sql: str) -> Schema:
         m = re.match(r"alter\s+table\s+(?:only\s+)?(\S+)\s+add\s+(?:column\s+)?(.*)$", stmt, re.I | re.S)
         if m and _clean_ident(m.group(1)) in schema.tables:
             t = schema.tables[_clean_ident(m.group(1))]
-            if not _parse_table_constraint(m.group(2), t):
-                _parse_column(m.group(2), t)
+            # ALTER TABLE t ADD a INT, ADD COLUMN b INT NOT NULL DEFAULT 0;
+            for n, clause in enumerate(_split_top_level(m.group(2))):
+                if n:
+                    clause = re.sub(r"^add\s+(?:column\s+)?", "", clause, flags=re.I)
+                if not _parse_table_constraint(clause, t):
+                    _parse_column(clause, t)
     for table in schema.tables.values():
         for column in table.primary_key:
             if column in table.columns:

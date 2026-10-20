@@ -101,3 +101,12 @@ def test_semicolon_and_comment_markers_inside_string_defaults():
     assert set(schema.tables) == {"u", "v"}
     assert schema.tables["u"].columns["note"].default == "'a;b'"
     assert schema.tables["u"].columns["url"].default == "'http://x.io/#frag -- not a comment'"
+
+
+def test_alter_table_with_several_add_clauses():
+    sql = """CREATE TABLE t (id INT PRIMARY KEY);
+    ALTER TABLE t ADD a INT, ADD COLUMN b INT NOT NULL DEFAULT 0, ADD UNIQUE (a);"""
+    t = load_schema(sql).tables["t"]
+    assert t.columns["a"].type == "int"
+    assert t.columns["b"].nullable is False and t.columns["b"].default == "0"
+    assert "unique_a" in t.indexes
