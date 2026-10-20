@@ -146,12 +146,64 @@ def _parse_table_constraint(defn: str, table: Table) -> bool:
     return True  # check constraints and others are ignored
 
 
+def _strip_comments(sql: str) -> str:
+    """Remove SQL comments without touching quoted text such as DEFAULT '-- x'."""
+    out, i, n, quote = [], 0, len(sql), None
+    line_start = True
+    while i < n:
+        ch = sql[i]
+        if quote:
+            out.append(ch)
+            if ch == quote:
+                quote = None
+            i += 1
+            continue
+        if ch in "'\"`":
+            quote = ch
+            out.append(ch)
+        elif sql.startswith("--", i) or (ch == "#" and line_start):
+            while i < n and sql[i] != "\n":
+                i += 1
+            out.append(" ")
+            continue
+        elif sql.startswith("/*", i):
+            end = sql.find("*/", i + 2)
+            i = n if end == -1 else end + 2
+            out.append(" ")
+            continue
+        else:
+            out.append(ch)
+        if ch == "\n":
+            line_start = True
+        elif not ch.isspace():
+            line_start = False
+        i += 1
+    return "".join(out)
+
+
+def _split_statements(sql: str) -> list:
+    """Split on semicolons that are not inside quotes."""
+    parts, cur, quote = [], [], None
+    for ch in sql:
+        if quote:
+            cur.append(ch)
+            if ch == quote:
+                quote = None
+        elif ch in "'\"`":
+            quote = ch
+            cur.append(ch)
+        elif ch == ";":
+            parts.append("".join(cur).strip())
+            cur = []
+        else:
+            cur.append(ch)
+    parts.append("".join(cur).strip())
+    return [p for p in parts if p]
+
+
 def parse_sql(sql: str) -> Schema:
-    sql = re.sub(r"/\*.*?\*/", " ", sql, flags=re.S)
-    sql = re.sub(r"--[^\n]*", " ", sql)
-    sql = re.sub(r"(?m)^\s*#[^\n]*", " ", sql)
     schema = Schema()
-    stmts = [s.strip() for s in sql.split(";") if s.strip()]
+    stmts = _split_statements(_strip_comments(sql))
     for stmt in stmts:
         m = re.match(
             r"create\s+(?:temp(?:orary)?\s+)?table\s+(?:if\s+not\s+exists\s+)?(\S+?)\s*\((.*)\)[^)]*$",

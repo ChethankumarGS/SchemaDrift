@@ -87,3 +87,17 @@ def test_columns_that_start_with_a_constraint_keyword_are_kept():
     cols = load_schema(sql).tables["t"].columns
     assert set(cols) == {"id", "check_in", "unique_code", "constraint_name"}
     assert cols["check_in"].nullable is False
+
+
+def test_semicolon_and_comment_markers_inside_string_defaults():
+    sql = """-- header comment
+    CREATE TABLE u (
+      id INT,
+      note TEXT DEFAULT 'a;b',
+      url TEXT DEFAULT 'http://x.io/#frag -- not a comment'
+    );
+    CREATE TABLE v (id INT);"""
+    schema = load_schema(sql)
+    assert set(schema.tables) == {"u", "v"}
+    assert schema.tables["u"].columns["note"].default == "'a;b'"
+    assert schema.tables["u"].columns["url"].default == "'http://x.io/#frag -- not a comment'"
