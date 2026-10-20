@@ -91,7 +91,11 @@ def _cols(s: str) -> tuple:
     return tuple(_clean_ident(c.split()[0]) for c in s.split(",") if c.strip())
 
 
-_CONSTRAINT_WORDS = ("primary key", "unique", "foreign key", "constraint", "check", "key ", "index ")
+# A table-level constraint starts with one of these keywords as a whole word. Matching
+# on a plain prefix would swallow columns such as check_in or unique_code.
+_CONSTRAINT_START = re.compile(
+    r"(?:primary\s+key|foreign\s+key|unique(?:\s+(?:key|index))?|check|exclude|"
+    r"(?:fulltext\s+|spatial\s+)?(?:key|index))\s*(?:\S+\s*)?\(", re.I)
 _TYPE_STOP = re.compile(
     r"\s+(not\s+null|null|default|primary\s+key|unique|references|check|constraint|"
     r"auto_increment|autoincrement|generated|collate|comment)\b", re.I)
@@ -122,11 +126,9 @@ def _parse_column(defn: str, table: Table) -> None:
 
 
 def _parse_table_constraint(defn: str, table: Table) -> bool:
-    low = defn.lower().strip()
-    low = re.sub(r"^constraint\s+\S+\s+", "", low)
-    if not low.startswith(_CONSTRAINT_WORDS):
-        return False
     d = re.sub(r"^\s*constraint\s+\S+\s+", "", defn, flags=re.I)
+    if not _CONSTRAINT_START.match(d):
+        return False
     m = re.match(r"primary\s+key\s*\(([^)]*)\)", d, re.I)
     if m:
         table.primary_key = _cols(m.group(1))

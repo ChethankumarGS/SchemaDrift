@@ -73,3 +73,17 @@ def test_json_primary_key_implies_not_null():
 def test_numbered_postgres_integer_aliases_are_normalized():
     cols = load_schema("CREATE TABLE t (a INT2, b INT4, c INT8);").tables["t"].columns
     assert [cols[c].type for c in ("a", "b", "c")] == ["smallint", "int", "bigint"]
+
+
+def test_columns_that_start_with_a_constraint_keyword_are_kept():
+    sql = """CREATE TABLE t (
+      id INT PRIMARY KEY,
+      check_in DATE NOT NULL,
+      unique_code VARCHAR(5),
+      constraint_name TEXT,
+      CHECK (id > 0),
+      UNIQUE (unique_code)
+    );"""
+    cols = load_schema(sql).tables["t"].columns
+    assert set(cols) == {"id", "check_in", "unique_code", "constraint_name"}
+    assert cols["check_in"].nullable is False
