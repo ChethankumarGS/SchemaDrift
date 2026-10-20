@@ -7,7 +7,7 @@
 ![Python](https://img.shields.io/badge/python-3.10%2B-3776AB?logo=python&logoColor=white)
 ![Flask](https://img.shields.io/badge/flask-3.x-000000?logo=flask&logoColor=white)
 ![Deployed on Vercel](https://img.shields.io/badge/deployed%20on-vercel-000000?logo=vercel&logoColor=white)
-![Tests](https://img.shields.io/badge/tests-27%20passing-3fb950)
+![Tests](https://img.shields.io/badge/tests-52%20passing-3fb950)
 
 ### [**>> Open the live demo <<**](https://schema-drift-nine.vercel.app/)
 
